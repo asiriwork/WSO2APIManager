@@ -35,6 +35,7 @@ import org.wso2.carbon.apimgt.usage.client.exception.APIMgtUsageQueryServiceClie
 import org.wso2.carbon.apimgt.usage.client.internal.APIUsageClientServiceComponent;
 import org.wso2.carbon.bam.presentation.stub.QueryServiceStub;
 import org.wso2.carbon.utils.CarbonUtils;
+import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -52,6 +53,7 @@ import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.Collection;
 
 
 public class APIUsageStatisticsClient {
@@ -62,18 +64,19 @@ public class APIUsageStatisticsClient {
     private static PaymentPlan paymentPlan;
     private static final String API_USAGE_TRACKING = "APIUsageTracking.";
     private static final String DATA_SOURCE_NAME = API_USAGE_TRACKING + "DataSourceName";
-   /* private static String text = "    <PaymentPlan name=\"platinam\">    <parameter name=\"call\">  " +
-            "      <range0><start>0</start><end>5</end><value>0.0</value></range0>      " +
-            "  <range1><start>5</start><end>10</end><value>2.0</value></range1>   " +
-            "     <range2><start>10</start><end>15000</end><value>5.0</value></range2>  " +
-            "  </parameter>    <parameter name=\"data\">        " +
-            "<range0><start>0</start><end>10</end><value>0.0</value></range0>    " +
-            "    <range1><start>10</start><end>20</end><value>1.0</value></range1>   " +
-            "     <range2><start>20</start><end>30000</end><value>2.0</value></range2>   " +
-            " </parameter>    <parameter name=\"messages\">        " +
-            "<range0><start>0</start><end>10</end><value>0.5</value></range0>       " +
-            " <range1><start>10</start><end>20000</end><value>1.0</value></range1>    </parameter></PaymentPlan>";
-     */
+    private static Map<String ,String> subscriberAppsMap = new HashMap<String, String>();
+    /* private static String text = "    <PaymentPlan name=\"platinam\">    <parameter name=\"call\">  " +
+             "      <range0><start>0</start><end>5</end><value>0.0</value></range0>      " +
+             "  <range1><start>5</start><end>10</end><value>2.0</value></range1>   " +
+             "     <range2><start>10</start><end>15000</end><value>5.0</value></range2>  " +
+             "  </parameter>    <parameter name=\"data\">        " +
+             "<range0><start>0</start><end>10</end><value>0.0</value></range0>    " +
+             "    <range1><start>10</start><end>20</end><value>1.0</value></range1>   " +
+             "     <range2><start>20</start><end>30000</end><value>2.0</value></range2>   " +
+             " </parameter>    <parameter name=\"messages\">        " +
+             "<range0><start>0</start><end>10</end><value>0.5</value></range0>       " +
+             " <range1><start>10</start><end>20000</end><value>1.0</value></range1>    </parameter></PaymentPlan>";
+      */
     /* public APIUsageStatisticsClient(String username) throws APIMgtUsageQueryServiceClientException {
         APIManagerConfiguration config = APIUsageClientServiceComponent.getAPIManagerConfiguration();
         String targetEndpoint = config.getFirstProperty(APIMgtUsagePublisherConstants.API_USAGE_BAM_SERVER_URL);
@@ -94,13 +97,13 @@ public class APIUsageStatisticsClient {
         APIManagerConfiguration config;
         try {
             config = APIUsageClientServiceComponent.getAPIManagerConfiguration();
-           // text = config.getFirstProperty("BillingConfig");
+            // text = config.getFirstProperty("BillingConfig");
             String billingConfig = config.getFirstProperty("EnableBillingAndUsage");
             boolean isBillingEnabled = Boolean.parseBoolean(billingConfig);
             if(isBillingEnabled){
-            String filePath = (new StringBuilder()).append(CarbonUtils.getCarbonHome()).append(File.separator).append("repository").append(File.separator).append("conf").append(File.separator).append("billing-conf.xml").toString();
-            element = buildOMElement(new FileInputStream(filePath));
-            paymentPlan = new PaymentPlan(element);
+                String filePath = (new StringBuilder()).append(CarbonUtils.getCarbonHome()).append(File.separator).append("repository").append(File.separator).append("conf").append(File.separator).append("billing-conf.xml").toString();
+                element = buildOMElement(new FileInputStream(filePath));
+                paymentPlan = new PaymentPlan(element);
             }
             String targetEndpoint = config.getFirstProperty("APIUsageTracking.BAMServerURL");
             if (targetEndpoint == null || targetEndpoint.equals(""))
@@ -148,6 +151,9 @@ public class APIUsageStatisticsClient {
     public List<APIUsageDTO> getUsageByAPIs(String providerName, String fromDate, String toDate, int limit)
             throws APIMgtUsageQueryServiceClientException {
 
+
+
+
         OMElement omElement = this.queryBetweenTwoDays(
                 APIUsageStatisticsClientConstants.API_VERSION_USAGE_SUMMARY, fromDate, toDate, null);
         Collection<APIUsage> usageData = getUsageData(omElement);
@@ -173,6 +179,484 @@ public class APIUsageStatisticsClient {
         }
         return getAPIUsageTopEntries(new ArrayList<APIUsageDTO>(usageByAPIs.values()), limit);
     }
+
+
+
+
+
+
+    public List<APIResponseFaultCountDTO> getPerAppFaultCount(String subscriberName, String fromDate, String toDate, int limit)
+            throws APIMgtUsageQueryServiceClientException {
+
+        OMElement omElement = this.queryBetweenTwoDays(
+                APIUsageStatisticsClientConstants.API_FAULT_SUMMARY, fromDate, toDate, null);
+        Collection<APIResponseFaultCount> usageData = getAPIResponseFaultCount(omElement);
+
+        List<String> subscriberApps = getAppsbySubscriber(subscriberName);
+
+        List<APIResponseFaultCountDTO>  perAppFaultCountList  = new ArrayList<APIResponseFaultCountDTO>();
+        APIResponseFaultCountDTO apiUsageDTO;
+        for (APIResponseFaultCount usage : usageData) {
+            for (String subscriberApp : subscriberApps) {
+                if(subscriberApp.equals(usage.consumerKey)){
+                    String consumerKey = usage.consumerKey;
+                    String api = usage.apiName;
+                    Boolean count = false;
+                    for(APIResponseFaultCountDTO usageDTO : perAppFaultCountList){
+                        if(usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)){
+                            usageDTO.setCount(usageDTO.getCount()+usage.faultCount);
+                            count = true;
+                            break;
+                        }
+                    }
+                    if(!count){
+                        apiUsageDTO = new APIResponseFaultCountDTO();
+                        apiUsageDTO.setApiName(api);
+                        apiUsageDTO.setappName(subscriberAppsMap.get(consumerKey));
+                        apiUsageDTO.setconsumerKey(consumerKey);
+                        apiUsageDTO.setCount(usage.faultCount);
+                        perAppFaultCountList.add(apiUsageDTO);
+                    }
+                }
+            }
+        }
+        return perAppFaultCountList;
+    }
+
+
+
+
+
+
+    public List<AppUsageDTO> geTopAppUsers(String subscriberName, String fromDate, String toDate, int limit)
+            throws APIMgtUsageQueryServiceClientException {
+
+        OMElement omElement = this.queryBetweenTwoDays(
+                APIUsageStatisticsClientConstants.API_REQUEST_SUMMARY, fromDate, toDate, null);
+        Collection<AppUsage> usageData = getAppUsageData(omElement);
+
+        List<String> subscriberApps = getAppsbySubscriber(subscriberName);
+
+        List<AppUsageDTO>  appUsageList  = new ArrayList<AppUsageDTO>();
+        AppUsageDTO appUsageDTO;
+        for (AppUsage usage : usageData) {
+            for (String subscriberApp : subscriberApps) {
+                if(subscriberApp.equals(usage.consumerKey)){
+                    String consumerKey = usage.consumerKey;
+                    String user = usage.userid;
+                    Boolean count = false;
+                    for(AppUsageDTO usageDTO : appUsageList){
+                        if(usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getUserid().equals(user)){
+                            usageDTO.setCount(usageDTO.getCount()+usage.requestCount);
+                            count = true;
+                            break;
+                        }
+                    }
+                    if(!count){
+                        appUsageDTO = new AppUsageDTO();
+                        appUsageDTO.setUserid(user);
+                        appUsageDTO.setappName(subscriberAppsMap.get(consumerKey));
+                        appUsageDTO.setconsumerKey(consumerKey);
+                        appUsageDTO.setCount(usage.requestCount);
+                        appUsageList.add(appUsageDTO);
+                    }
+                }
+            }
+        }
+        Collections.sort(appUsageList, AppUsageDTO.compareCount);
+        return appUsageList;
+    }
+
+
+    private static class AppUsage {
+
+
+        private String userid;
+        private String context;
+        private long requestCount;
+        private String consumerKey;
+
+        public AppUsage(OMElement row) {
+
+            userid = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.USER_ID)).getText();
+            requestCount = (long) Double.parseDouble(row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.REQUEST)).getText());
+            consumerKey = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.CONSUMERKEY)).getText();
+
+        }
+    }
+
+
+    private Collection<AppUsage> getAppUsageData(OMElement data) {
+        List<AppUsage> usageData = new ArrayList<AppUsage>();
+        OMElement rowsElement = data.getFirstChildWithName(new QName(
+                APIUsageStatisticsClientConstants.ROWS));
+        Iterator rowIterator = rowsElement.getChildrenWithName(new QName(
+                APIUsageStatisticsClientConstants.ROW));
+        if (rowIterator != null) {
+            while (rowIterator.hasNext()) {
+                OMElement rowElement = (OMElement) rowIterator.next();
+                usageData.add(new AppUsage(rowElement));
+            }
+        }
+        return usageData;
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public List<AppCallTypeDTO> getAppApiCallType(String subscriberName, String fromDate, String toDate, int limit)
+            throws APIMgtUsageQueryServiceClientException {
+
+        OMElement omElement = this.queryBetweenTwoDays(
+                APIUsageStatisticsClientConstants.API_Resource_Path_USAGE_SUMMARY, fromDate, toDate, null);
+        Collection<AppCallType> usageData = getCallTypeUsageData(omElement);
+
+        List<String> subscriberApps = getAppsbySubscriber(subscriberName);
+
+        List<AppCallTypeDTO>  appApiCallTypeList  = new ArrayList<AppCallTypeDTO>();
+        AppCallTypeDTO appCallTypeDTO;
+        for (AppCallType usage : usageData) {
+            for (String subscriberApp : subscriberApps) {
+                if(subscriberApp.equals(usage.consumerKey)){
+                    String consumerKey = usage.consumerKey;
+                    String api = usage.apiName;
+                    Boolean count = false;
+                    for(AppCallTypeDTO usageDTO : appApiCallTypeList){
+                        if(usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)){
+                            if(!usageDTO.getCallType().contains(usage.callType)){
+                                usageDTO.getCallType().add(usage.callType);
+
+
+                            }
+                            count = true;
+                            break;
+
+                        }
+                    }
+                    if(!count){
+                        List<String> callType = new ArrayList<String>();
+                        callType.add(usage.callType);
+                        appCallTypeDTO = new AppCallTypeDTO();
+                        appCallTypeDTO.setApiName(api);
+                        appCallTypeDTO.setappName(subscriberAppsMap.get(consumerKey));
+                        appCallTypeDTO.setconsumerKey(consumerKey);
+                        appCallTypeDTO.setCallType(callType);
+                        appApiCallTypeList.add(appCallTypeDTO);
+                    }
+                }
+            }
+        }
+        return appApiCallTypeList;
+    }
+
+    private Collection<AppCallType> getCallTypeUsageData(OMElement data) {
+        List<AppCallType> usageData = new ArrayList<AppCallType>();
+        OMElement rowsElement = data.getFirstChildWithName(new QName(
+                APIUsageStatisticsClientConstants.ROWS));
+        Iterator rowIterator = rowsElement.getChildrenWithName(new QName(
+                APIUsageStatisticsClientConstants.ROW));
+        if (rowIterator != null) {
+            while (rowIterator.hasNext()) {
+                OMElement rowElement = (OMElement) rowIterator.next();
+                usageData.add(new AppCallType(rowElement));
+            }
+        }
+        return usageData;
+
+
+    }
+
+
+
+    private static class AppCallType {
+
+        private String apiName;
+
+        private String callType;
+
+        private String consumerKey;
+
+        public AppCallType(OMElement row) {
+            apiName = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.API)).getText();
+            consumerKey = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.CONSUMERKEY)).getText();
+            callType = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.METHOD)).getText();
+        }
+    }
+
+
+
+
+
+
+
+
+
+    public List<AppRegisteredUsersDTO> getAppRegisteredUsers(String subscriberName ) throws APIMgtUsageQueryServiceClientException {
+
+
+
+        List<String> subscriberApps = getAppsbySubscriber(subscriberName);
+
+        Collection<AppRegisteredUsersDTO> usageData = getAppUsers();
+
+
+
+        List<AppRegisteredUsersDTO>  appUserList  = new ArrayList<AppRegisteredUsersDTO>();
+        AppRegisteredUsersDTO appUsers;
+        for (AppRegisteredUsersDTO usage : usageData) {
+            for (String subscriberApp : subscriberApps) {
+                if(subscriberApp.equals(usage.getconsumerKey())){
+                    appUsers = new AppRegisteredUsersDTO();
+                    appUsers.setappName(subscriberAppsMap.get(usage.getconsumerKey()));
+                    appUsers.setUser(usage.getUser());
+                    appUserList.add(appUsers);
+                }
+            }
+        }
+
+        return appUserList;
+    }
+
+
+
+
+    private  List<AppRegisteredUsersDTO> getAppUsers() throws APIMgtUsageQueryServiceClientException {
+
+
+
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet rs = null;
+        try {
+            connection = APIMgtDBUtil.getConnection();
+            statement = connection.createStatement();
+            String query;
+
+
+            query = "SELECT CONSUMER_KEY , AUTHZ_USER FROM IDN_OAUTH2_ACCESS_TOKEN GROUP BY CONSUMER_KEY  ";
+
+
+            rs = statement.executeQuery(query);
+
+            int columnCount = rs.getMetaData().getColumnCount();
+            List<AppRegisteredUsersDTO> usageData = new ArrayList<AppRegisteredUsersDTO>();
+            AppRegisteredUsersDTO appRegUsersDTO;
+            while (rs.next()) {
+                String[] appDetail = new String[2];
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = rs.getMetaData().getColumnName(i);
+                    String columnValue = rs.getString(columnName);
+                    appDetail[i-1] = columnValue;
+
+                }
+                appRegUsersDTO = new AppRegisteredUsersDTO();
+                appRegUsersDTO.setconsumerKey(appDetail[0]);
+                appRegUsersDTO.setUser(appDetail[1]);
+                usageData.add(appRegUsersDTO);
+
+            }
+            return usageData;
+
+
+        } catch (Exception e) {
+            throw new APIMgtUsageQueryServiceClientException("Error occurred while querying from JDBC database", e);
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ignore) {
+
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+
+                }
+            }
+        }
+    }
+
+
+
+
+    public List<APIUsageDTO> perAppPerAPIUsage(String subscruberName, String fromDate, String toDate, int limit)
+            throws APIMgtUsageQueryServiceClientException {
+
+        OMElement omElement = this.queryBetweenTwoDays(
+                APIUsageStatisticsClientConstants.API_REQUEST_SUMMARY, fromDate, toDate, null);
+        Collection<APIUsage> usageData = getUsageData(omElement);
+
+
+
+        List<String> subscriberApps = getAppsbySubscriber(subscruberName);
+
+        List<APIUsageDTO>  perAppUsageList  = new ArrayList<APIUsageDTO>();
+        APIUsageDTO apiUsageDTO;
+        for (APIUsage usage : usageData) {
+            for (String subscriberApp : subscriberApps) {
+                if(subscriberApp.equals(usage.consumerKey)){
+                    String consumerKey = usage.consumerKey;
+                    String api = usage.apiName;
+                    Boolean count = false;
+                    for(APIUsageDTO usageDTO : perAppUsageList){
+                        if(usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)){
+                            usageDTO.setCount(usageDTO.getCount()+usage.requestCount);
+                            count = true;
+                            break;
+                        }
+                    }
+
+                    if(!count){
+                        apiUsageDTO = new APIUsageDTO();
+                        apiUsageDTO.setApiName(api);
+                        apiUsageDTO.setappName(subscriberAppsMap.get(consumerKey));
+                        apiUsageDTO.setconsumerKey(consumerKey);
+                        apiUsageDTO.setCount(usage.requestCount);
+                        perAppUsageList.add(apiUsageDTO);
+                    }
+                }
+            }
+        }
+        return getAPIUsageTopEntries(perAppUsageList, limit);
+    }
+
+
+    private static class APIUsage {
+
+        private String apiName;
+        private String apiVersion;
+        private String context;
+        private long requestCount;
+        private String consumerKey;
+
+        public APIUsage(OMElement row) {
+            apiName = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.API)).getText();
+            apiVersion = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.VERSION)).getText();
+            context = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.CONTEXT)).getText();
+            requestCount = (long) Double.parseDouble(row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.REQUEST)).getText());
+            consumerKey = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.CONSUMERKEY)).getText();
+
+        }
+    }
+
+
+
+
+    private List<String> getAppsbySubscriber(String subscriberName)throws APIMgtUsageQueryServiceClientException {
+
+        Connection connection = null;
+        Statement statement = null;
+        ResultSet rs = null;
+        try {
+            connection = APIMgtDBUtil.getConnection();
+            statement = connection.createStatement();
+            String query;
+
+            query = "SELECT  CONSUMER_KEY,NAME FROM AM_APPLICATION_KEY_MAPPING  NATURAL JOIN AM_APPLICATION  NATURAL JOIN AM_SUBSCRIBER WHERE USER_ID = '"+subscriberName+"' ";
+
+            rs = statement.executeQuery(query);
+
+            int columnCount = rs.getMetaData().getColumnCount();
+            List<String> consumerKeys = new ArrayList<String>();
+            while (rs.next()) {
+                String[] appDetail = new String[2];
+                for (int i = 1; i <= columnCount; i++) {
+                    String columnName = rs.getMetaData().getColumnName(i);
+                    String columnValue = rs.getString(columnName);
+                    appDetail[i-1] = columnValue;
+                    if(i==1){
+                        consumerKeys.add(columnValue);
+                    }
+                }
+                subscriberAppsMap.put(appDetail[0], appDetail[1]);
+            }
+            return consumerKeys;
+
+
+        } catch (Exception e) {
+            throw new APIMgtUsageQueryServiceClientException("Error occurred while querying from JDBC database", e);
+        } finally {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (SQLException ignore) {
+
+                }
+            }
+            if (statement != null) {
+                try {
+                    statement.close();
+                } catch (SQLException e) {
+
+                }
+            }
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+
+                }
+            }
+        }
+    }
+
+
+
+
+
+
 
     /**
      * Returns a list of APIVersionUsageDTO objects that contain information related to a
@@ -297,7 +781,7 @@ public class APIUsageStatisticsClient {
         }
         return usageByResourcePath;
     }
-    
+
     public List<APIDestinationUsageDTO> getAPIUsageByDestination(String providerName, String fromDate, String toDate)
             throws APIMgtUsageQueryServiceClientException {
 
@@ -313,7 +797,7 @@ public class APIUsageStatisticsClient {
                         providerAPI.getId().getVersion().equals(usage.apiVersion) &&
                         providerAPI.getContext().equals(usage.context)) {
 
-                	APIDestinationUsageDTO usageDTO = new APIDestinationUsageDTO();
+                    APIDestinationUsageDTO usageDTO = new APIDestinationUsageDTO();
                     usageDTO.setApiName(usage.apiName);
                     usageDTO.setVersion(usage.apiVersion);
                     usageDTO.setDestination(usage.destination);
@@ -846,7 +1330,7 @@ public class APIUsageStatisticsClient {
     }
 
     private OMElement queryBetweenTwoDays(String columnFamily, String fromDate,String toDate,
-                                    QueryServiceStub.CompositeIndex[] compositeIndex)
+                                          QueryServiceStub.CompositeIndex[] compositeIndex)
             throws APIMgtUsageQueryServiceClientException {
 
         if (dataSource == null) {
@@ -932,7 +1416,7 @@ public class APIUsageStatisticsClient {
 
 
     private OMElement queryBetweenTwoDaysForFaulty(String columnFamily, String fromDate,String toDate,
-                                          QueryServiceStub.CompositeIndex[] compositeIndex)
+                                                   QueryServiceStub.CompositeIndex[] compositeIndex)
             throws APIMgtUsageQueryServiceClientException {
 
         if (dataSource == null) {
@@ -1085,11 +1569,11 @@ public class APIUsageStatisticsClient {
             }
         }
     }
-    
+
     private OMElement queryToGetAPIUsageByDestination(String columnFamily, String fromDate, String toDate,
-            											QueryServiceStub.CompositeIndex[] compositeIndex)
+                                                      QueryServiceStub.CompositeIndex[] compositeIndex)
             throws APIMgtUsageQueryServiceClientException {
-    	if (dataSource == null) {
+        if (dataSource == null) {
             throw new APIMgtUsageQueryServiceClientException("BAM data source hasn't been initialized. Ensure " +
                     "that the data source is properly configured in the APIUsageTracker configuration.");
         }
@@ -1394,7 +1878,7 @@ public class APIUsageStatisticsClient {
         }
         return usageData;
     }
-    
+
     private Collection<APIUsageByDestination> getUsageDataByDestination(OMElement data) {
         List<APIUsageByDestination> usageData = new ArrayList<APIUsageByDestination>();
         OMElement rowsElement = data.getFirstChildWithName(new QName(
@@ -1506,7 +1990,7 @@ public class APIUsageStatisticsClient {
                             APIUsageStatisticsClientConstants.VERSION)).getText())) {
                         usageData.get(i).requestCount = usageData.get(i).requestCount + (long) Double.parseDouble(rowElement.getFirstChildWithName(new QName(
                                 APIUsageStatisticsClientConstants.REQUEST)).getText());
-               //    return usageData;
+                        //    return usageData;
                     }
 
                 }
@@ -1541,24 +2025,7 @@ public class APIUsageStatisticsClient {
         return usageData;
     }
 
-    private static class APIUsage {
 
-        private String apiName;
-        private String apiVersion;
-        private String context;
-        private long requestCount;
-
-        public APIUsage(OMElement row) {
-            apiName = row.getFirstChildWithName(new QName(
-                    APIUsageStatisticsClientConstants.API)).getText();
-            apiVersion = row.getFirstChildWithName(new QName(
-                    APIUsageStatisticsClientConstants.VERSION)).getText();
-            context = row.getFirstChildWithName(new QName(
-                    APIUsageStatisticsClientConstants.CONTEXT)).getText();
-            requestCount = (long) Double.parseDouble(row.getFirstChildWithName(new QName(
-                    APIUsageStatisticsClientConstants.REQUEST)).getText());
-        }
-    }
 
     private static class APIUsageByUser {
 
@@ -1600,7 +2067,7 @@ public class APIUsageStatisticsClient {
                     APIUsageStatisticsClientConstants.REQUEST)).getText());
         }
     }
-    
+
     private static class APIUsageByDestination {
 
         private String apiName;
@@ -1643,12 +2110,12 @@ public class APIUsageStatisticsClient {
     }
 
     private static class APIResponseFaultCount {
-
         private String apiName;
         private String apiVersion;
         private String context;
         private String requestTime;
         private long faultCount;
+        private String consumerKey;
 
         public APIResponseFaultCount(OMElement row) {
             apiName = row.getFirstChildWithName(new QName(
@@ -1661,6 +2128,9 @@ public class APIUsageStatisticsClient {
                     APIUsageStatisticsClientConstants.INVOCATION_TIME));
             OMElement faultCountEle = row.getFirstChildWithName(new QName(
                     APIUsageStatisticsClientConstants.FAULT));
+            consumerKey = row.getFirstChildWithName(new QName(
+                    APIUsageStatisticsClientConstants.CONSUMERKEY)).getText();
+
             if (invocationTimeEle != null) {
                 requestTime = invocationTimeEle.getText();
             }
@@ -1827,7 +2297,7 @@ public class APIUsageStatisticsClient {
     }
 
     private OMElement queryFirstAccess(String columnFamily,
-                                    QueryServiceStub.CompositeIndex[] compositeIndex)
+                                       QueryServiceStub.CompositeIndex[] compositeIndex)
             throws APIMgtUsageQueryServiceClientException {
 
         if (dataSource == null) {
@@ -1850,7 +2320,7 @@ public class APIUsageStatisticsClient {
             statement = connection.createStatement();
             String query;
             if (connection != null && connection.getMetaData().getDatabaseProductName().equalsIgnoreCase("oracle")) {
-                 if (selectRowsByColumnName != null) {
+                if (selectRowsByColumnName != null) {
                     //select time,year,month,day from API_REQUEST_SUMMARY order by time ASC limit 1
                     query = "SELECT time,year,month,day FROM  " + columnFamily + " WHERE " + selectRowsByColumnName +
                             "=\'" + selectRowsByColumnValue + "\' AND ROWNUM <= 1 order by time ASC";

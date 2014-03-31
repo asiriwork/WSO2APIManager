@@ -28,9 +28,24 @@ public class APIResponseFaultCountDTO {
 
     private double faultPercentage;
 
-	private String requestTime;
+    private String requestTime;
 
     private long count;
+
+    private String appName;
+
+    private String consumerKey;
+
+
+
+
+    public String getconsumerKey() {return consumerKey; }
+
+    public void setconsumerKey(String consumerKey) { this.consumerKey = consumerKey;}
+
+    public String getappName() {return appName; }
+
+    public void setappName(String appName) { this.appName = appName;}
 
     public String getApiName() {
         return apiName;
