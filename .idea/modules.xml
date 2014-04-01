@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/apimgt.iml" filepath="$PROJECT_DIR$/apimgt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.api/1.2.0/org.wso2.carbon.apimgt.api.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.api/1.2.0/org.wso2.carbon.apimgt.api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.core/1.2.0/org.wso2.carbon.apimgt.core.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.core/1.2.0/org.wso2.carbon.apimgt.core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.gateway/1.2.0/org.wso2.carbon.apimgt.gateway.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.gateway/1.2.0/org.wso2.carbon.apimgt.gateway.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.hostobjects/1.2.2/org.wso2.carbon.apimgt.hostobjects.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.hostobjects/1.2.2/org.wso2.carbon.apimgt.hostobjects.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.impl/1.2.0/org.wso2.carbon.apimgt.impl.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.impl/1.2.0/org.wso2.carbon.apimgt.impl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.interceptor/1.2.0/org.wso2.carbon.apimgt.interceptor.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.interceptor/1.2.0/org.wso2.carbon.apimgt.interceptor.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.keymgt/1.2.0/org.wso2.carbon.apimgt.keymgt.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.keymgt/1.2.0/org.wso2.carbon.apimgt.keymgt.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.keymgt.client/1.2.0/org.wso2.carbon.apimgt.keymgt.client.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.keymgt.client/1.2.0/org.wso2.carbon.apimgt.keymgt.client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.startup.publisher/1.2.0/org.wso2.carbon.apimgt.startup.publisher.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.startup.publisher/1.2.0/org.wso2.carbon.apimgt.startup.publisher.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.usage/org.wso2.carbon.apimgt.usage.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.usage/org.wso2.carbon.apimgt.usage.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.usage/org.wso2.carbon.apimgt.usage.client/1.2.2/org.wso2.carbon.apimgt.usage.client.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.usage/org.wso2.carbon.apimgt.usage.client/1.2.2/org.wso2.carbon.apimgt.usage.client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/org.wso2.carbon.apimgt.usage/org.wso2.carbon.apimgt.usage.publisher/1.2.2/org.wso2.carbon.apimgt.usage.publisher.iml" filepath="$PROJECT_DIR$/org.wso2.carbon.apimgt.usage/org.wso2.carbon.apimgt.usage.publisher/1.2.2/org.wso2.carbon.apimgt.usage.publisher.iml" />
+    </modules>
+  </component>
+</project>
+

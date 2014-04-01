@@ -3,8 +3,8 @@
 <project name="file_copy" >
     
 
-    <delete file="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/components/patches/patch0005/org.wso2.carbon.apimgt.usage.client-1.2.2.jar"/>
-    <delete file="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/components/patches/patch0005/org.wso2.carbon.apimgt.hostobjects-1.2.2.jar"/>
+    <delete file="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/components/patches/patch0005/org.wso2.carbon.apimgt.usage.client-1.2.2.jar"/>
+    <delete file="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/components/patches/patch0005/org.wso2.carbon.apimgt.hostobjects-1.2.2.jar"/>
 
 
 <!--     <delete file="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/deployment/server/jaggeryapps/store/site/pages/statistics.jag"/>
@@ -12,41 +12,41 @@
      <delete dir="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/deployment/server/jaggeryapps/store/site/themes/fancy/templates/stats/"/>
      <delete dir="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/deployment/server/jaggeryapps/store/site/blocks/stats/"/> -->
      
-     <copy file="/media/Ubuntu/apimanagerGIT/SuperCalm/apimgt/org.wso2.carbon.apimgt.usage/org.wso2.carbon.apimgt.usage.client/1.2.2/target/org.wso2.carbon.apimgt.usage.client-1.2.2.jar" tofile="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/components/patches/patch0005/org.wso2.carbon.apimgt.usage.client-1.2.2.jar" overwrite="true"/>
+     <copy file="/media/Ubuntu/wso2work/apim/apimcomponenets/apimgt/org.wso2.carbon.apimgt.usage/org.wso2.carbon.apimgt.usage.client/1.2.2/target/org.wso2.carbon.apimgt.usage.client-1.2.2.jar" tofile="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/components/patches/patch0005/org.wso2.carbon.apimgt.usage.client-1.2.2.jar" overwrite="true"/>
 
-      <copy file="/media/Ubuntu/apimanagerGIT/SuperCalm/apimgt/org.wso2.carbon.apimgt.hostobjects/1.2.2/target/org.wso2.carbon.apimgt.hostobjects-1.2.2.jar" tofile="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/components/patches/patch0005/org.wso2.carbon.apimgt.hostobjects-1.2.2.jar" overwrite="true"/>
+      <copy file="/media/Ubuntu/wso2work/apim/apimcomponenets/apimgt/org.wso2.carbon.apimgt.hostobjects/1.2.2/target/org.wso2.carbon.apimgt.hostobjects-1.2.2.jar" tofile="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/components/patches/patch0005/org.wso2.carbon.apimgt.hostobjects-1.2.2.jar" overwrite="true"/>
 
     
 
       
 
      <copy todir="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/deployment/server/jaggeryapps/store/" overwrite="true">
-    <fileset dir="/media/Ubuntu/apimanagerGIT/SuperCalm/apimgt/api-store-web/1.2.2/src"/>
+    <fileset dir="/media/Ubuntu/wso2work/apim/apimcomponenets/apimgt/api-store-web/1.2.2/src"/>
   </copy>
 
 
 
 
 
-<!-- 
 
 
-  <copy file="/media/Ubuntu/apimanagerGIT/SuperCalm/apimgt/api-store-web/1.2.2/src/site/pages/statistics.jag" tofile="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/deployment/server/jaggeryapps/store/site/pages/statistics.jag" overwrite="true"/>
+
+<!--   <copy file="/media/Ubuntu/wso2work/apim/apimcomponenets/apimgt/api-store-web/1.2.2/src/site/pages/statistics.jag" tofile="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/deployment/server/jaggeryapps/store/site/pages/statistics.jag" overwrite="true"/>
 
 
- <copy todir="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/deployment/server/jaggeryapps/store/modules/statistics/" overwrite="true">
-    <fileset dir="/media/Ubuntu/apimanagerGIT/SuperCalm/apimgt/api-store-web/1.2.2/src/modules/statistics"/>
+ <copy todir="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/deployment/server/jaggeryapps/store/modules/statistics/" overwrite="true">
+    <fileset dir="/media/Ubuntu/wso2work/apim/apimcomponenets/apimgt/api-store-web/1.2.2/src/modules/statistics"/>
   </copy>
 
   
 
-   <copy todir="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/deployment/server/jaggeryapps/store/site/themes/fancy/templates/stats/" overwrite="true">
-    <fileset dir="/media/Ubuntu/apimanagerGIT/SuperCalm/apimgt/api-store-web/1.2.2/src/site/themes/fancy/templates/stats"/>
+   <copy todir="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/deployment/server/jaggeryapps/store/site/themes/fancy/templates/stats/" overwrite="true">
+    <fileset dir="/media/Ubuntu/wso2work/apim/apimcomponenets/apimgt/api-store-web/1.2.2/src/site/themes/fancy/templates/stats"/>
   </copy>
 
 
- <copy todir="/media/Ubuntu/wso2am/wso2am-1.6.0/repository/deployment/server/jaggeryapps/store/site/blocks/stats/" overwrite="true">
-    <fileset dir="/media/Ubuntu/apimanagerGIT/SuperCalm/apimgt/api-store-web/1.2.2/src/site/blocks/stats"/>
+ <copy todir="/media/Ubuntu/wso2work/products/wso2am-1.7.0/repository/deployment/server/jaggeryapps/store/site/blocks/stats/" overwrite="true">
+    <fileset dir="/media/Ubuntu/wso2work/apim/apimcomponenets/apimgt/api-store-web/1.2.2/src/site/blocks/stats"/>
   </copy>
  -->
 

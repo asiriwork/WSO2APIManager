@@ -3008,6 +3008,97 @@ public class APIStoreHostObject extends ScriptableObject {
         return myn;
     }
 
+//
+//    public static NativeArray jsFunction_getProviderAPIUsage(Context cx, Scriptable thisObj,
+//                                                             Object[] args, Function funObj)
+//            throws APIManagementException {
+//        NativeArray myn = new NativeArray(0);
+//
+//        if (!HostObjectUtils.checkDataPublishingEnabled()) {
+//            return myn;
+//        }
+//
+//        List<APIUsageDTO> list = null;
+//        if (args == null || args.length == 0) {
+//            handleException("Invalid number of parameters.");
+//        }
+//        String providerName = (String) args[0];
+//        String fromDate = (String) args[1];
+//        String toDate = (String) args[2];
+//        try {
+//            APIUsageStatisticsClient client = new APIUsageStatisticsClient(((APIStoreHostObject) thisObj).getUsername());
+//            //list = client.getUsageByAPIs(providerName, fromDate, toDate, 10);
+//            list = client.perAppPerAPIUsage(providerName, fromDate, toDate, 10);
+//        } catch (APIMgtUsageQueryServiceClientException e) {
+//            handleException("Error while invoking APIUsageStatisticsClient for ProviderAPIUsage", e);
+//        }
+//
+//        Iterator it = null;
+//        if (list != null) {
+//            it = list.iterator();
+//        }
+//
+//        if (it != null) {
+//            // Sort API Usage by Application Name
+//            Map<String, List<APIUsageDTO>> appAPIUsage = new HashMap<String, List<APIUsageDTO>>();
+//
+//            while (it.hasNext()) {
+//                APIUsageDTO apiUsage = (APIUsageDTO) it.next();
+//
+//                // TODO: Need to put the proper Application name
+//                //String appName = "DefaultApplication";
+//                String appName = apiUsage.getappName();
+//
+//                List<APIUsageDTO> apiUsages = appAPIUsage.get(appName);
+//
+//                // If App already encountered it will add to existing usage list else create new usage list
+//                if (null == apiUsages) {
+//                    apiUsages = new ArrayList<APIUsageDTO>();
+//                    appAPIUsage.put(appName, apiUsages);
+//                }
+//
+//                apiUsages.add(apiUsage);
+//            }
+//
+//            int i = 0;  // NativeArray index
+//            // Populate NativeArray with sorted API Usage details
+//            for (Map.Entry<String, List<APIUsageDTO>> entry : appAPIUsage.entrySet()) {
+//                List<APIUsageDTO> dtoList = entry.getValue();
+//
+//                boolean hasFoundFirstRow = false;
+//
+//                // Ensure Application Name does not get repeated past first row by entering a
+//                // 'space' in the subsequent rows. So it will look like this when represented in tabular view,
+//                // =====================================================
+//                // || Application Name || API Name      || Call count ||
+//                // =====================================================
+//                // |    Social App      | Twitter API    |      2      |
+//                // -----------------------------------------------------
+//                // |                    | Facebook API   |      1      |
+//                // -----------------------------------------------------
+//                // |    News App        | Newsweek API   |      7      |
+//                // -----------------------------------------------------
+//                for (APIUsageDTO usage : dtoList) {
+//                    NativeObject row = new NativeObject();
+//
+//                    if (!hasFoundFirstRow) { // First entry in List
+//                        row.put("appName", row, entry.getKey());
+//                        hasFoundFirstRow = true;
+//                    } else {  // Not first entry in List
+//                        row.put("appName", row, " "); // Add blank
+//                    }
+//
+//                    row.put("apiName", row, usage.getApiName());
+//                    row.put("count", row, usage.getCount());
+//
+//                    myn.put(i, myn, row);
+//                    i++;
+//                }
+//            }
+//        }
+//        return myn;
+//    }
+
 
     public static NativeArray jsFunction_getProviderAPIUsage(Context cx, Scriptable thisObj,
                                                              Object[] args, Function funObj)
@@ -3022,13 +3113,12 @@ public class APIStoreHostObject extends ScriptableObject {
         if (args == null || args.length == 0) {
             handleException("Invalid number of parameters.");
         }
-        String providerName = (String) args[0];
+        String subscriberName = (String) args[0];
         String fromDate = (String) args[1];
         String toDate = (String) args[2];
         try {
             APIUsageStatisticsClient client = new APIUsageStatisticsClient(((APIStoreHostObject) thisObj).getUsername());
-            //list = client.getUsageByAPIs(providerName, fromDate, toDate, 10);
-            list = client.perAppPerAPIUsage(providerName, fromDate, toDate, 10);
+            list = client.perAppPerAPIUsage(subscriberName, fromDate, toDate, 10);
         } catch (APIMgtUsageQueryServiceClientException e) {
             handleException("Error while invoking APIUsageStatisticsClient for ProviderAPIUsage", e);
         }
@@ -3038,66 +3128,49 @@ public class APIStoreHostObject extends ScriptableObject {
             it = list.iterator();
         }
 
+        int i = 0;
         if (it != null) {
             // Sort API Usage by Application Name
-            Map<String, List<APIUsageDTO>> appAPIUsage = new HashMap<String, List<APIUsageDTO>>();
+            NativeObject perAPICount;
+
+            Map<String, NativeArray> appAPIUsageMap = new HashMap<String, NativeArray>();
 
             while (it.hasNext()) {
                 APIUsageDTO apiUsage = (APIUsageDTO) it.next();
+                perAPICount = new NativeObject();
 
-                // TODO: Need to put the proper Application name
-                //String appName = "DefaultApplication";
-                String appName = apiUsage.getappName();
+                perAPICount.put("apiName", perAPICount, apiUsage.getApiName());
+                perAPICount.put("count", perAPICount, apiUsage.getCount());
 
-                List<APIUsageDTO> apiUsages = appAPIUsage.get(appName);
+                if (appAPIUsageMap.containsKey(apiUsage.getappName())) {
+                    NativeArray appCountList = appAPIUsageMap.get(apiUsage.getappName());
 
-                // If App already encountered it will add to existing usage list else create new usage list
-                if (null == apiUsages) {
-                    apiUsages = new ArrayList<APIUsageDTO>();
-                    appAPIUsage.put(appName, apiUsages);
-                }
+                    appCountList.put(appCountList.size(), appCountList, perAPICount);
+                } else {
 
-                apiUsages.add(apiUsage);
-            }
-
-            int i = 0;  // NativeArray index
-            // Populate NativeArray with sorted API Usage details
-            for (Map.Entry<String, List<APIUsageDTO>> entry : appAPIUsage.entrySet()) {
-                List<APIUsageDTO> dtoList = entry.getValue();
-
-                boolean hasFoundFirstRow = false;
-
-                // Ensure Application Name does not get repeated past first row by entering a
-                // 'space' in the subsequent rows. So it will look like this when represented in tabular view,
-                // =====================================================
-                // || Application Name || API Name      || Call count ||
-                // =====================================================
-                // |    Social App      | Twitter API    |      2      |
-                // -----------------------------------------------------
-                // |                    | Facebook API   |      1      |
-                // -----------------------------------------------------
-                // |    News App        | Newsweek API   |      7      |
-                // -----------------------------------------------------
-                for (APIUsageDTO usage : dtoList) {
-                    NativeObject row = new NativeObject();
-
-                    if (!hasFoundFirstRow) { // First entry in List
-                        row.put("appName", row, entry.getKey());
-                        hasFoundFirstRow = true;
-                    } else {  // Not first entry in List
-                        row.put("appName", row, " "); // Add blank
-                    }
-
-                    row.put("apiName", row, usage.getApiName());
-                    row.put("count", row, usage.getCount());
-
-                    myn.put(i, myn, row);
-                    i++;
+                    NativeArray appCountList = new NativeArray(0);
+                    appCountList.put(0, appCountList, perAPICount);
+                    appAPIUsageMap.put(apiUsage.getappName(), appCountList);
                 }
             }
+
+            for (Map.Entry entry : appAPIUsageMap.entrySet()) {
+                NativeObject row = new NativeObject();
+                row.put("appName", row, entry.getKey());
+                row.put("apiCountArray", row, entry.getValue());
+
+                myn.put(i, myn, row);
+                i++;
+            }
+
         }
         return myn;
     }
+
+
+
+
+
 
     public static NativeArray jsFunction_getTopAppUsers(Context cx, Scriptable thisObj,
                                                         Object[] args, Function funObj)
