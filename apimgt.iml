@@ -8,6 +8,15 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="JaggeryLibrary">
+        <CLASSES>
+          <root url="jar://$APPLICATION_PLUGINS_DIR$/JaggeryEditorSupport.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
 

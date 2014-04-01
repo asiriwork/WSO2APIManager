@@ -1,0 +1,16 @@
+<%
+jagg.module("statistics", {
+
+	getFirstAccessTime:function () {
+        return jagg.require(jagg.getModulesDir() + "statistics/usage.jag").getFirstAccessTime.apply(this, arguments);
+    },getProviderAPIUsage:function () {
+        return jagg.require(jagg.getModulesDir() + "statistics/usage.jag").getProviderAPIUsage.apply(this, arguments);
+    },getPerAppSubscribers:function () {
+        return jagg.require(jagg.getModulesDir() + "statistics/usage.jag").getPerAppSubscribers.apply(this, arguments);
+    },getPerAppAPIFaultCount:function () {
+        return jagg.require(jagg.getModulesDir() + "statistics/usage.jag").getPerAppAPIFaultCount.apply(this, arguments);
+    },getPerAppAPICallType:function () {
+        return jagg.require(jagg.getModulesDir() + "statistics/usage.jag").getPerAppAPICallType.apply(this, arguments);
+    }
+});
+%>
