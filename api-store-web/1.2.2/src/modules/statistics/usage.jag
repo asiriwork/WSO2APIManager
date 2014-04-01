@@ -65,6 +65,36 @@ function getProviderAPIUsage(providerName,from,to, server) {
     }
 }
 
+function getTopAppUsers(subscriberName,from,to, server) {
+    var usage = [];
+    var usageout = [];
+    try {
+        usage = apiStore.getTopAppUsers(subscriberName,from,to, server);
+        if (log.isDebugEnabled()) {
+            log.debug("getTopAppUsers for : " + server);
+        }
+        if (usage == null) {
+            return {
+                error:true
+            };
+
+        } else {
+
+            return {
+                error:false,
+                usage:usage
+            };
+        }
+    } catch (e) {
+        log.error(e.message);
+        return {
+            error:e,
+            usage:null
+
+        };
+    }
+}
+
 function getPerAppSubscribers(subscriberName,from,to, server) {
     var usage = [];
     var usageout = [];

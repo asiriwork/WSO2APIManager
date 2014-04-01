@@ -9,23 +9,30 @@ public class AppUsageDTO {
 
     private String appName;
     private String userid;
-    private String  consumerKey;
+    private String consumerKey;
     private long count;
 
 
+    public String getconsumerKey() {
+        return consumerKey;
+    }
+
+    public void setconsumerKey(String consumerKey) {
+        this.consumerKey = consumerKey;
+    }
+
+    public String getappName() {
+        return appName;
+    }
+
+    public void setappName(String appName) {
+        this.appName = appName;
+    }
 
 
-    public String getconsumerKey() {return consumerKey; }
-
-    public void setconsumerKey(String consumerKey) { this.consumerKey = consumerKey;}
-
-    public String getappName() {return appName; }
-
-    public void setappName(String appName) { this.appName = appName;}
-
-
-
-    public String getUserid() {return userid; }
+    public String getUserid() {
+        return userid;
+    }
 
     public void setUserid(String userid) {
         this.userid = userid;
@@ -49,7 +56,7 @@ public class AppUsageDTO {
                 public int compare(AppUsageDTO ap1, AppUsageDTO ap2) {
                     this.ap1 = ap1;
                     this.ap2 = ap2;
-                    return Long.compare(ap2.getCount(),ap1.getCount());
+                    return Long.compare(ap2.getCount(), ap1.getCount());
                 }
             };
 //

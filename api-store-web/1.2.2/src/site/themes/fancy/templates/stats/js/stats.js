@@ -49,6 +49,7 @@ require(["dojo/dom", "dojo/domReady!"], function(dom){
 
                         drawAppAPIUsage(from,to);
                         drawAppUsers(from,to);
+                        drawTopAppUsers(from,to);
                         drawAPIResponseFaultCountTable(from,to);
                         drawAPIResponseFaultCountChart(from,to);
                         drawAPIUsageByResourcePath(from,to);
@@ -114,6 +115,43 @@ var drawAppAPIUsage = function(from,to){
             t_on['tempLoadingSpace'] = 0;
         }, "json");
 }
+
+
+
+var drawTopAppUsers = function(from,to){
+
+    var fromDate = from;
+    var toDate = to;
+    jagg.post("/site/blocks/stats/ajax/stats.jag", { action:"getTopAppUsers",currentLocation:currentLocation,fromDate:fromDate,toDate:toDate  },
+        function (json) {
+            if (!json.error) {
+                //last access table remove ??
+                $('#topAppUsersTable').find("tr:gt(0)").remove();
+                var length = json.usage.length;
+                $('#topAppUsersTable').show();
+                for (var i = 0; i < json.usage.length; i++) {
+                    $('#topAppUsersTable').append($('<tr><td>' + json.usage[i].app + '</td><td>' + json.usage[i].user + '</td><td class="tdNumberCell">' + json.usage[i].count + '</td></tr>'));
+                }
+                if (length == 0) {
+                    $('#topAppUsersTable').hide();
+                    $('#tempLoadingSpace').html('');
+                    $('#tempLoadingSpace').append($('<span class="label label-info">'+i18n.t('errorMsgs.noData')+'</span>'));
+
+                }else{
+                    $('#tempLoadingSpace').hide();
+                }
+
+            } else {
+                if (json.message == "AuthenticateError") {
+                    jagg.showLogin();
+                } else {
+                    jagg.message({content:json.message,type:"error"});
+                }
+            }
+            t_on['tempLoadingSpace'] = 0;
+        }, "json");
+}
+
 
 
 var drawAppUsers = function(from,to){

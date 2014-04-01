@@ -11,6 +11,8 @@ jagg.module("statistics", {
         return jagg.require(jagg.getModulesDir() + "statistics/usage.jag").getPerAppAPIFaultCount.apply(this, arguments);
     },getPerAppAPICallType:function () {
         return jagg.require(jagg.getModulesDir() + "statistics/usage.jag").getPerAppAPICallType.apply(this, arguments);
+    },getTopAppUsers:function () {
+        return jagg.require(jagg.getModulesDir() + "statistics/usage.jag").getTopAppUsers.apply(this, arguments);
     }
 });
 %>

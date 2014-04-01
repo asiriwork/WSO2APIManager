@@ -59,6 +59,21 @@
         </div>
     </div>
 
+
+    <div class="well">
+        <div class="row-fluid">
+            <div class="span11">
+                 <table class="table graphTable" id="topAppUsersTable" style="display:none">
+                    <tr>
+                        <th><%="APPLICATION"%></th>
+                        <th><%="USER"%></th>
+                        <th><%=i18n.localize("noOfAPICalls")%></th>
+                    </tr>
+                 </table>
+            </div>
+        </div>
+    </div>
+
     <div class="well">
         <div class="row-fluid">
             <div class="span11">

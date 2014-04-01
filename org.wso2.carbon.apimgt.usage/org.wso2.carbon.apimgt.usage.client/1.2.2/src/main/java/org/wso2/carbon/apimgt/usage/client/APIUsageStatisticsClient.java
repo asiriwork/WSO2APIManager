@@ -29,13 +29,13 @@ import org.wso2.carbon.apimgt.api.model.SubscribedAPI;
 import org.wso2.carbon.apimgt.api.model.Subscriber;
 import org.wso2.carbon.apimgt.impl.APIManagerConfiguration;
 import org.wso2.carbon.apimgt.impl.APIManagerFactory;
+import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 import org.wso2.carbon.apimgt.usage.client.billing.PaymentPlan;
 import org.wso2.carbon.apimgt.usage.client.dto.*;
 import org.wso2.carbon.apimgt.usage.client.exception.APIMgtUsageQueryServiceClientException;
 import org.wso2.carbon.apimgt.usage.client.internal.APIUsageClientServiceComponent;
 import org.wso2.carbon.bam.presentation.stub.QueryServiceStub;
 import org.wso2.carbon.utils.CarbonUtils;
-import org.wso2.carbon.apimgt.impl.utils.APIMgtDBUtil;
 
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -48,12 +48,14 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.Collection;
 
 
 public class APIUsageStatisticsClient {
@@ -64,7 +66,8 @@ public class APIUsageStatisticsClient {
     private static PaymentPlan paymentPlan;
     private static final String API_USAGE_TRACKING = "APIUsageTracking.";
     private static final String DATA_SOURCE_NAME = API_USAGE_TRACKING + "DataSourceName";
-    private static Map<String ,String> subscriberAppsMap = new HashMap<String, String>();
+    private static Map<String, String> subscriberAppsMap = new HashMap<String, String>();
+
     /* private static String text = "    <PaymentPlan name=\"platinam\">    <parameter name=\"call\">  " +
              "      <range0><start>0</start><end>5</end><value>0.0</value></range0>      " +
              "  <range1><start>5</start><end>10</end><value>2.0</value></range1>   " +
@@ -100,7 +103,7 @@ public class APIUsageStatisticsClient {
             // text = config.getFirstProperty("BillingConfig");
             String billingConfig = config.getFirstProperty("EnableBillingAndUsage");
             boolean isBillingEnabled = Boolean.parseBoolean(billingConfig);
-            if(isBillingEnabled){
+            if (isBillingEnabled) {
                 String filePath = (new StringBuilder()).append(CarbonUtils.getCarbonHome()).append(File.separator).append("repository").append(File.separator).append("conf").append(File.separator).append("billing-conf.xml").toString();
                 element = buildOMElement(new FileInputStream(filePath));
                 paymentPlan = new PaymentPlan(element);
@@ -145,13 +148,10 @@ public class APIUsageStatisticsClient {
      *
      * @param providerName Name of the API provider
      * @return a List of APIUsageDTO objects - possibly empty
-     * @throws APIMgtUsageQueryServiceClientException
-     *          if an error occurs while contacting backend services
+     * @throws APIMgtUsageQueryServiceClientException if an error occurs while contacting backend services
      */
     public List<APIUsageDTO> getUsageByAPIs(String providerName, String fromDate, String toDate, int limit)
             throws APIMgtUsageQueryServiceClientException {
-
-
 
 
         OMElement omElement = this.queryBetweenTwoDays(
@@ -181,10 +181,6 @@ public class APIUsageStatisticsClient {
     }
 
 
-
-
-
-
     public List<APIResponseFaultCountDTO> getPerAppFaultCount(String subscriberName, String fromDate, String toDate, int limit)
             throws APIMgtUsageQueryServiceClientException {
 
@@ -194,22 +190,22 @@ public class APIUsageStatisticsClient {
 
         List<String> subscriberApps = getAppsbySubscriber(subscriberName);
 
-        List<APIResponseFaultCountDTO>  perAppFaultCountList  = new ArrayList<APIResponseFaultCountDTO>();
+        List<APIResponseFaultCountDTO> perAppFaultCountList = new ArrayList<APIResponseFaultCountDTO>();
         APIResponseFaultCountDTO apiUsageDTO;
         for (APIResponseFaultCount usage : usageData) {
             for (String subscriberApp : subscriberApps) {
-                if(subscriberApp.equals(usage.consumerKey)){
+                if (subscriberApp.equals(usage.consumerKey)) {
                     String consumerKey = usage.consumerKey;
                     String api = usage.apiName;
                     Boolean count = false;
-                    for(APIResponseFaultCountDTO usageDTO : perAppFaultCountList){
-                        if(usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)){
-                            usageDTO.setCount(usageDTO.getCount()+usage.faultCount);
+                    for (APIResponseFaultCountDTO usageDTO : perAppFaultCountList) {
+                        if (usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)) {
+                            usageDTO.setCount(usageDTO.getCount() + usage.faultCount);
                             count = true;
                             break;
                         }
                     }
-                    if(!count){
+                    if (!count) {
                         apiUsageDTO = new APIResponseFaultCountDTO();
                         apiUsageDTO.setApiName(api);
                         apiUsageDTO.setappName(subscriberAppsMap.get(consumerKey));
@@ -224,11 +220,7 @@ public class APIUsageStatisticsClient {
     }
 
 
-
-
-
-
-    public List<AppUsageDTO> geTopAppUsers(String subscriberName, String fromDate, String toDate, int limit)
+    public List<AppUsageDTO> getTopAppUsers(String subscriberName, String fromDate, String toDate, int limit)
             throws APIMgtUsageQueryServiceClientException {
 
         OMElement omElement = this.queryBetweenTwoDays(
@@ -237,22 +229,22 @@ public class APIUsageStatisticsClient {
 
         List<String> subscriberApps = getAppsbySubscriber(subscriberName);
 
-        List<AppUsageDTO>  appUsageList  = new ArrayList<AppUsageDTO>();
+        List<AppUsageDTO> appUsageList = new ArrayList<AppUsageDTO>();
         AppUsageDTO appUsageDTO;
         for (AppUsage usage : usageData) {
             for (String subscriberApp : subscriberApps) {
-                if(subscriberApp.equals(usage.consumerKey)){
+                if (subscriberApp.equals(usage.consumerKey)) {
                     String consumerKey = usage.consumerKey;
                     String user = usage.userid;
                     Boolean count = false;
-                    for(AppUsageDTO usageDTO : appUsageList){
-                        if(usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getUserid().equals(user)){
-                            usageDTO.setCount(usageDTO.getCount()+usage.requestCount);
+                    for (AppUsageDTO usageDTO : appUsageList) {
+                        if (usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getUserid().equals(user)) {
+                            usageDTO.setCount(usageDTO.getCount() + usage.requestCount);
                             count = true;
                             break;
                         }
                     }
-                    if(!count){
+                    if (!count) {
                         appUsageDTO = new AppUsageDTO();
                         appUsageDTO.setUserid(user);
                         appUsageDTO.setappName(subscriberAppsMap.get(consumerKey));
@@ -272,7 +264,7 @@ public class APIUsageStatisticsClient {
 
 
         private String userid;
-        private String context;
+
         private long requestCount;
         private String consumerKey;
 
@@ -307,38 +299,6 @@ public class APIUsageStatisticsClient {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     public List<AppCallTypeDTO> getAppApiCallType(String subscriberName, String fromDate, String toDate, int limit)
             throws APIMgtUsageQueryServiceClientException {
 
@@ -348,17 +308,17 @@ public class APIUsageStatisticsClient {
 
         List<String> subscriberApps = getAppsbySubscriber(subscriberName);
 
-        List<AppCallTypeDTO>  appApiCallTypeList  = new ArrayList<AppCallTypeDTO>();
+        List<AppCallTypeDTO> appApiCallTypeList = new ArrayList<AppCallTypeDTO>();
         AppCallTypeDTO appCallTypeDTO;
         for (AppCallType usage : usageData) {
             for (String subscriberApp : subscriberApps) {
-                if(subscriberApp.equals(usage.consumerKey)){
+                if (subscriberApp.equals(usage.consumerKey)) {
                     String consumerKey = usage.consumerKey;
                     String api = usage.apiName;
                     Boolean count = false;
-                    for(AppCallTypeDTO usageDTO : appApiCallTypeList){
-                        if(usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)){
-                            if(!usageDTO.getCallType().contains(usage.callType)){
+                    for (AppCallTypeDTO usageDTO : appApiCallTypeList) {
+                        if (usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)) {
+                            if (!usageDTO.getCallType().contains(usage.callType)) {
                                 usageDTO.getCallType().add(usage.callType);
 
 
@@ -368,7 +328,7 @@ public class APIUsageStatisticsClient {
 
                         }
                     }
-                    if(!count){
+                    if (!count) {
                         List<String> callType = new ArrayList<String>();
                         callType.add(usage.callType);
                         appCallTypeDTO = new AppCallTypeDTO();
@@ -402,7 +362,6 @@ public class APIUsageStatisticsClient {
     }
 
 
-
     private static class AppCallType {
 
         private String apiName;
@@ -422,15 +381,7 @@ public class APIUsageStatisticsClient {
     }
 
 
-
-
-
-
-
-
-
-    public List<AppRegisteredUsersDTO> getAppRegisteredUsers(String subscriberName ) throws APIMgtUsageQueryServiceClientException {
-
+    public List<AppRegisteredUsersDTO> getAppRegisteredUsers(String subscriberName) throws APIMgtUsageQueryServiceClientException {
 
 
         List<String> subscriberApps = getAppsbySubscriber(subscriberName);
@@ -438,12 +389,11 @@ public class APIUsageStatisticsClient {
         Collection<AppRegisteredUsersDTO> usageData = getAppUsers();
 
 
-
-        List<AppRegisteredUsersDTO>  appUserList  = new ArrayList<AppRegisteredUsersDTO>();
+        List<AppRegisteredUsersDTO> appUserList = new ArrayList<AppRegisteredUsersDTO>();
         AppRegisteredUsersDTO appUsers;
         for (AppRegisteredUsersDTO usage : usageData) {
             for (String subscriberApp : subscriberApps) {
-                if(subscriberApp.equals(usage.getconsumerKey())){
+                if (subscriberApp.equals(usage.getconsumerKey())) {
                     appUsers = new AppRegisteredUsersDTO();
                     appUsers.setappName(subscriberAppsMap.get(usage.getconsumerKey()));
                     appUsers.setUser(usage.getUser());
@@ -456,10 +406,7 @@ public class APIUsageStatisticsClient {
     }
 
 
-
-
-    private  List<AppRegisteredUsersDTO> getAppUsers() throws APIMgtUsageQueryServiceClientException {
-
+    private List<AppRegisteredUsersDTO> getAppUsers() throws APIMgtUsageQueryServiceClientException {
 
 
         Connection connection = null;
@@ -484,7 +431,7 @@ public class APIUsageStatisticsClient {
                 for (int i = 1; i <= columnCount; i++) {
                     String columnName = rs.getMetaData().getColumnName(i);
                     String columnValue = rs.getString(columnName);
-                    appDetail[i-1] = columnValue;
+                    appDetail[i - 1] = columnValue;
 
                 }
                 appRegUsersDTO = new AppRegisteredUsersDTO();
@@ -524,8 +471,6 @@ public class APIUsageStatisticsClient {
     }
 
 
-
-
     public List<APIUsageDTO> perAppPerAPIUsage(String subscruberName, String fromDate, String toDate, int limit)
             throws APIMgtUsageQueryServiceClientException {
 
@@ -534,26 +479,25 @@ public class APIUsageStatisticsClient {
         Collection<APIUsage> usageData = getUsageData(omElement);
 
 
-
         List<String> subscriberApps = getAppsbySubscriber(subscruberName);
 
-        List<APIUsageDTO>  perAppUsageList  = new ArrayList<APIUsageDTO>();
+        List<APIUsageDTO> perAppUsageList = new ArrayList<APIUsageDTO>();
         APIUsageDTO apiUsageDTO;
         for (APIUsage usage : usageData) {
             for (String subscriberApp : subscriberApps) {
-                if(subscriberApp.equals(usage.consumerKey)){
+                if (subscriberApp.equals(usage.consumerKey)) {
                     String consumerKey = usage.consumerKey;
                     String api = usage.apiName;
                     Boolean count = false;
-                    for(APIUsageDTO usageDTO : perAppUsageList){
-                        if(usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)){
-                            usageDTO.setCount(usageDTO.getCount()+usage.requestCount);
+                    for (APIUsageDTO usageDTO : perAppUsageList) {
+                        if (usageDTO.getconsumerKey().equals(consumerKey) && usageDTO.getApiName().equals(api)) {
+                            usageDTO.setCount(usageDTO.getCount() + usage.requestCount);
                             count = true;
                             break;
                         }
                     }
 
-                    if(!count){
+                    if (!count) {
                         apiUsageDTO = new APIUsageDTO();
                         apiUsageDTO.setApiName(api);
                         apiUsageDTO.setappName(subscriberAppsMap.get(consumerKey));
@@ -592,9 +536,7 @@ public class APIUsageStatisticsClient {
     }
 
 
-
-
-    private List<String> getAppsbySubscriber(String subscriberName)throws APIMgtUsageQueryServiceClientException {
+    private List<String> getAppsbySubscriber(String subscriberName) throws APIMgtUsageQueryServiceClientException {
 
         Connection connection = null;
         Statement statement = null;
@@ -604,7 +546,7 @@ public class APIUsageStatisticsClient {
             statement = connection.createStatement();
             String query;
 
-            query = "SELECT  CONSUMER_KEY,NAME FROM AM_APPLICATION_KEY_MAPPING  NATURAL JOIN AM_APPLICATION  NATURAL JOIN AM_SUBSCRIBER WHERE USER_ID = '"+subscriberName+"' ";
+            query = "SELECT  CONSUMER_KEY,NAME FROM AM_APPLICATION_KEY_MAPPING  NATURAL JOIN AM_APPLICATION  NATURAL JOIN AM_SUBSCRIBER WHERE USER_ID = '" + subscriberName + "' ";
 
             rs = statement.executeQuery(query);
 
@@ -615,8 +557,8 @@ public class APIUsageStatisticsClient {
                 for (int i = 1; i <= columnCount; i++) {
                     String columnName = rs.getMetaData().getColumnName(i);
                     String columnValue = rs.getString(columnName);
-                    appDetail[i-1] = columnValue;
-                    if(i==1){
+                    appDetail[i - 1] = columnValue;
+                    if (i == 1) {
                         consumerKeys.add(columnValue);
                     }
                 }
@@ -653,11 +595,6 @@ public class APIUsageStatisticsClient {
     }
 
 
-
-
-
-
-
     /**
      * Returns a list of APIVersionUsageDTO objects that contain information related to a
      * particular API of a specified provider, along with the number of API calls processed
@@ -666,8 +603,7 @@ public class APIUsageStatisticsClient {
      * @param providerName Name of the API provider
      * @param apiName      Name of th API
      * @return a List of APIVersionUsageDTO objects, possibly empty
-     * @throws APIMgtUsageQueryServiceClientException
-     *          on error
+     * @throws APIMgtUsageQueryServiceClientException on error
      */
     public List<APIVersionUsageDTO> getUsageByAPIVersions(String providerName,
                                                           String apiName) throws APIMgtUsageQueryServiceClientException {
@@ -751,8 +687,7 @@ public class APIUsageStatisticsClient {
      *
      * @param providerName Name of the API provider
      * @return a List of APIResourcePathUsageDTO objects, possibly empty
-     * @throws APIMgtUsageQueryServiceClientException
-     *          on error
+     * @throws APIMgtUsageQueryServiceClientException on error
      */
     public List<APIResourcePathUsageDTO> getAPIUsageByResourcePath(String providerName, String fromDate, String toDate)
             throws APIMgtUsageQueryServiceClientException {
@@ -816,10 +751,9 @@ public class APIUsageStatisticsClient {
      *
      * @param providerName Name of the API provider
      * @return a List of APIUsageByUserDTO objects, possibly empty
-     * @throws APIMgtUsageQueryServiceClientException
-     *          on error
+     * @throws APIMgtUsageQueryServiceClientException on error
      */
-    public List<APIUsageByUserDTO> getAPIUsageByUser(String providerName,String fromDate, String toDate)
+    public List<APIUsageByUserDTO> getAPIUsageByUser(String providerName, String fromDate, String toDate)
             throws APIMgtUsageQueryServiceClientException {
 
         OMElement omElement = this.queryBetweenTwoDaysForAPIUsageByUser(fromDate, toDate, null);
@@ -850,8 +784,7 @@ public class APIUsageStatisticsClient {
      *
      * @param providerName Name of the API provider
      * @return a List of APIResponseTimeDTO objects, possibly empty
-     * @throws APIMgtUsageQueryServiceClientException
-     *          on error
+     * @throws APIMgtUsageQueryServiceClientException on error
      */
     public List<APIResponseTimeDTO> getResponseTimesByAPIs(String providerName, String fromDate, String toDate, int limit)
             throws APIMgtUsageQueryServiceClientException {
@@ -902,14 +835,13 @@ public class APIUsageStatisticsClient {
      *
      * @param providerName Name of the API provider
      * @return a list of APIVersionLastAccessTimeDTO objects, possibly empty
-     * @throws APIMgtUsageQueryServiceClientException
-     *          on error
+     * @throws APIMgtUsageQueryServiceClientException on error
      */
     public List<APIVersionLastAccessTimeDTO> getLastAccessTimesByAPI(String providerName, String fromDate, String toDate, int limit)
             throws APIMgtUsageQueryServiceClientException {
 
         OMElement omElement = this.queryBetweenTwoDays(
-                APIUsageStatisticsClientConstants.API_VERSION_KEY_LAST_ACCESS_SUMMARY,fromDate,toDate, null);
+                APIUsageStatisticsClientConstants.API_VERSION_KEY_LAST_ACCESS_SUMMARY, fromDate, toDate, null);
         Collection<APIAccessTime> accessTimes = getAccessTimeData(omElement);
         List<API> providerAPIs = getAPIsByProvider(providerName);
         Map<String, APIAccessTime> lastAccessTimes = new TreeMap<String, APIAccessTime>();
@@ -953,8 +885,7 @@ public class APIUsageStatisticsClient {
      * @param apiName      Name of the API
      * @param limit        Number of sorted entries to return
      * @return a List of PerUserAPIUsageDTO objects - Possibly empty
-     * @throws APIMgtUsageQueryServiceClientException
-     *          on error
+     * @throws APIMgtUsageQueryServiceClientException on error
      */
     public List<PerUserAPIUsageDTO> getUsageBySubscribers(String providerName, String apiName, int limit)
             throws APIMgtUsageQueryServiceClientException {
@@ -989,7 +920,7 @@ public class APIUsageStatisticsClient {
             throws APIMgtUsageQueryServiceClientException {
 
         OMElement omElement = this.queryBetweenTwoDaysForFaulty(
-                APIUsageStatisticsClientConstants.API_FAULT_SUMMARY,fromDate,toDate, null);
+                APIUsageStatisticsClientConstants.API_FAULT_SUMMARY, fromDate, toDate, null);
         Collection<APIResponseFaultCount> faultyData = getAPIResponseFaultCount(omElement);
         List<API> providerAPIs = getAPIsByProvider(providerName);
         List<APIResponseFaultCountDTO> faultyCount = new ArrayList<APIResponseFaultCountDTO>();
@@ -1095,8 +1026,8 @@ public class APIUsageStatisticsClient {
 
         Calendar cal = Calendar.getInstance();
         int year = cal.get(cal.YEAR);
-        int month = cal.get(cal.MONTH)+1;
-        if (!period.equals(""+year+"-"+month)) {
+        int month = cal.get(cal.MONTH) + 1;
+        if (!period.equals("" + year + "-" + month)) {
             omElement = this.queryDatabase(
                     APIUsageStatisticsClientConstants.KEY_USAGE_MONTH_SUMMARY, null);
             Collection<APIVersionUsageByUserMonth> usageData = getUsageAPIBySubscriberMonthly(omElement);
@@ -1329,7 +1260,7 @@ public class APIUsageStatisticsClient {
         }
     }
 
-    private OMElement queryBetweenTwoDays(String columnFamily, String fromDate,String toDate,
+    private OMElement queryBetweenTwoDays(String columnFamily, String fromDate, String toDate,
                                           QueryServiceStub.CompositeIndex[] compositeIndex)
             throws APIMgtUsageQueryServiceClientException {
 
@@ -1415,7 +1346,7 @@ public class APIUsageStatisticsClient {
     }
 
 
-    private OMElement queryBetweenTwoDaysForFaulty(String columnFamily, String fromDate,String toDate,
+    private OMElement queryBetweenTwoDaysForFaulty(String columnFamily, String fromDate, String toDate,
                                                    QueryServiceStub.CompositeIndex[] compositeIndex)
             throws APIMgtUsageQueryServiceClientException {
 
@@ -1691,7 +1622,7 @@ public class APIUsageStatisticsClient {
                             " GROUP BY api,version,apiPublisher,context";
                 } else {
                     query = "SELECT api,version,apiPublisher,context,SUM(total_request_count) as total_request_count " +
-                            " FROM" +columnFamily +
+                            " FROM" + columnFamily +
                             " GROUP BY api,version,apiPublisher,context";
                 }
             }
@@ -1747,7 +1678,7 @@ public class APIUsageStatisticsClient {
         }
 
         int resultsLimit = APIUsageStatisticsClientConstants.DEFAULT_RESULTS_LIMIT;
-        if(limit!=null){
+        if (limit != null) {
             resultsLimit = limit.intValue();
         }
 
@@ -1760,19 +1691,19 @@ public class APIUsageStatisticsClient {
             String query;
             String oracleQuery;
             if (fromDate != null && toDate != null) {
-                query = "SELECT API, API_VERSION, VERSION, USERID, SUM(TOTAL_REQUEST_COUNT) AS TOTAL_REQUEST_COUNT, CONTEXT "+
+                query = "SELECT API, API_VERSION, VERSION, USERID, SUM(TOTAL_REQUEST_COUNT) AS TOTAL_REQUEST_COUNT, CONTEXT " +
                         "FROM API_REQUEST_SUMMARY" + " WHERE " + APIUsageStatisticsClientConstants.TIME + " BETWEEN " +
-                        "\'" + fromDate + "\' AND \'" + toDate + "\'" +" GROUP BY API, API_VERSION, USERID ORDER BY TOTAL_REQUEST_COUNT DESC LIMIT " + resultsLimit;
+                        "\'" + fromDate + "\' AND \'" + toDate + "\'" + " GROUP BY API, API_VERSION, USERID ORDER BY TOTAL_REQUEST_COUNT DESC LIMIT " + resultsLimit;
 
-                oracleQuery =  "SELECT API, API_VERSION, VERSION, USERID, SUM(TOTAL_REQUEST_COUNT) AS TOTAL_REQUEST_COUNT, CONTEXT "+
+                oracleQuery = "SELECT API, API_VERSION, VERSION, USERID, SUM(TOTAL_REQUEST_COUNT) AS TOTAL_REQUEST_COUNT, CONTEXT " +
                         "FROM API_REQUEST_SUMMARY" + " WHERE " + APIUsageStatisticsClientConstants.TIME + " BETWEEN " +
-                        "\'" + fromDate + "\' AND \'" + toDate + "\'" +" AND ROWNUM <= " + resultsLimit + " GROUP BY API, API_VERSION, VERSION, USERID, CONTEXT ORDER BY TOTAL_REQUEST_COUNT DESC";
+                        "\'" + fromDate + "\' AND \'" + toDate + "\'" + " AND ROWNUM <= " + resultsLimit + " GROUP BY API, API_VERSION, VERSION, USERID, CONTEXT ORDER BY TOTAL_REQUEST_COUNT DESC";
             } else {
-                query = "SELECT API, API_VERSION, VERSION, USERID, SUM(TOTAL_REQUEST_COUNT) AS TOTAL_REQUEST_COUNT, CONTEXT "+
+                query = "SELECT API, API_VERSION, VERSION, USERID, SUM(TOTAL_REQUEST_COUNT) AS TOTAL_REQUEST_COUNT, CONTEXT " +
                         "FROM API_REQUEST_SUMMARY GROUP BY API, API_VERSION, USERID ORDER BY TOTAL_REQUEST_COUNT DESC LIMIT " + resultsLimit;
 
-                oracleQuery = "SELECT API, API_VERSION, VERSION, USERID, SUM(TOTAL_REQUEST_COUNT) AS TOTAL_REQUEST_COUNT, CONTEXT "+
-                        "FROM API_REQUEST_SUMMARY WHERE ROWNUM <= "+ resultsLimit + " GROUP BY API, API_VERSION, VERSION, USERID, CONTEXT ORDER BY TOTAL_REQUEST_COUNT DESC ";
+                oracleQuery = "SELECT API, API_VERSION, VERSION, USERID, SUM(TOTAL_REQUEST_COUNT) AS TOTAL_REQUEST_COUNT, CONTEXT " +
+                        "FROM API_REQUEST_SUMMARY WHERE ROWNUM <= " + resultsLimit + " GROUP BY API, API_VERSION, VERSION, USERID, CONTEXT ORDER BY TOTAL_REQUEST_COUNT DESC ";
 
             }
             if ((connection.getMetaData().getDriverName()).contains("Oracle")) {
@@ -1821,7 +1752,6 @@ public class APIUsageStatisticsClient {
             }
         }
     }
-
 
 
     public boolean isTableExist(String tableName, Connection connection) throws SQLException {
@@ -2026,7 +1956,6 @@ public class APIUsageStatisticsClient {
     }
 
 
-
     private static class APIUsageByUser {
 
         private String context;
@@ -2093,7 +2022,8 @@ public class APIUsageStatisticsClient {
     private static class APIUsageByUserName {
 
         private String apiName;
-        private String apiVersion;;
+        private String apiVersion;
+        ;
         private String userID;
         private long requestCount;
 
@@ -2288,7 +2218,7 @@ public class APIUsageStatisticsClient {
         Collection<APIFirstAccess> usageData = getFirstAccessTime(omElement);
         List<String> APIFirstAccessList = new ArrayList<String>();
 
-        for(APIFirstAccess usage : usageData){
+        for (APIFirstAccess usage : usageData) {
             APIFirstAccessList.add(usage.year);
             APIFirstAccessList.add(usage.month);
             APIFirstAccessList.add(usage.day);
